@@ -43,56 +43,34 @@ public class Coches {
 		BooleanVar catSup[][] = new BooleanVar[st][pl];
 		BooleanVar catInf[][] = new BooleanVar[st][pl];
 		BooleanVar catEq[][] = new BooleanVar[st][pl];
+		BooleanVar bloqueaTiempo[][] = new BooleanVar[st][pl];
+		
 		//Matrices de LITERALES
 		int[][] isEmptyLiteral = new int[st][pl];
 		int[][] catSupLiteral = new int[st][pl];
 		int[][] catInfLiteral = new int[st][pl];
 		int[][] catEqLiteral = new int[st][pl];
+		int[][] bloqueaTiempoLiteral = new int[st][pl];
 		
 		for(int i = 0; i<st; i++) {
 			for(int j = 0; j<pl; j++) {
-					isEmpty[i][j] = new BooleanVar(store, "La posicion "+j+" de la calle "+i+" esta: Vacia"); 
-			
-					/* Registramos las variables en el sat wrapper */
-					satWrapper.register(isEmpty[i][j]);
-					
-					
-				System.out.println(isEmpty[i][j]);
-			}
-		}
-		
-		
-		
-	
-		for(int i = 0; i < st; i++) {
-			for(int j = 0; j < pl; j++) {
-					catSup[i][j] = new BooleanVar(store, "La categoria de la posicion "+j+" de la calle "+i+" SI es mayor que la posicion de la derecha"); 
-					catInf[i][j] = new BooleanVar(store, "La categoria de la posicion "+j+" de la calle "+i+" SI es mayor que la posicion de la derecha"); 
-					catEq[i][j] = new BooleanVar(store, "La categoria de la posicion "+j+" de la calle "+i+" SI es mayor que la posicion de la derecha"); 
-
-					/* Registramos las variables en el sat wrapper */
-					satWrapper.register(catSup[i][j]);
-					satWrapper.register(catInf[i][j]);
-					satWrapper.register(catEq[i][j]);
-					
-					
-					
-				System.out.println(catSup[i][j]);
 				
+				/* Creacion de variables booleanas*/
+				isEmpty[i][j] = new BooleanVar(store, "La posicion "+j+" de la calle "+i+" esta: Vacia"); 
+				catSup[i][j] = new BooleanVar(store, "La categoria de la posicion "+j+1+" de la calle "+i+" es SUPERIOR a la de la posicion "+j+" " +i); 
+				catInf[i][j] = new BooleanVar(store, "La categoria de la posicion "+j+1+" de la calle "+i+" es INFERIOR a la de la posicion "+j+" " +i); 
+				catEq[i][j] = new BooleanVar(store, "La categoria de la posicion "+j+1+" de la calle "+i+" es IGUAL a la de la posicion "+j+" " +i); 
+				bloqueaTiempo[i][j] = new BooleanVar(store, "La posicion "+j+1+" de la calle "+i+" sale ANTES que la de la posicion "+j+" " +i); 
+				
+				/* Registramos las variables en el sat wrapper */
+				satWrapper.register(isEmpty[i][j]);
+				satWrapper.register(catSup[i][j]);
+				satWrapper.register(catInf[i][j]);
+				satWrapper.register(catEq[i][j]);
+				satWrapper.register(bloqueaTiempo[i][j]);
+
 			}
-		}
-
-
-		/* Todas las variables: es necesario para el SimpleSelect */
-		//BooleanVar[] allVariables = new BooleanVar[]{x, y, z, w};
-
-
-		/* Obtenemos los literales no negados de las variables 
-		catSupLiteral[i][j] = satWrapper.cpVarToBoolVar(catSup[i][j], 1, true);
-		catInfLiteral[i][j] = satWrapper.cpVarToBoolVar(catInf[i][j], 1, true);
-		catEqLiteral[i][j] = satWrapper.cpVarToBoolVar(catEq[i][j], 1, true);
-		*/
-		
+		}	
 
 		/* Obtenemos los literales de todas las variables */
 		int cont = 0;
@@ -110,46 +88,65 @@ public class Coches {
 		cont = 0;
  		
  		for(int i = 0; i<st; i++) {
- 			for(int j = 0; j<pl-1; j++) {
- 				 				
- 				if(text.charAt(cont) == '_'){
+ 			for(int j = 0; j<pl; j++) {
+ 				if(j<pl-1) {
+ 					
+					if(text.charAt(cont) > text.charAt(cont + 2)){
+						catSupLiteral[i][j] = satWrapper.cpVarToBoolVar(catSup[i][j], 0, false);
+						catInfLiteral[i][j] = satWrapper.cpVarToBoolVar(catInf[i][j], 1, true);
+						catEqLiteral[i][j] = satWrapper.cpVarToBoolVar(catEq[i][j], 0, false);
+					}
+					
+					if(text.charAt(cont) < text.charAt(cont + 2)){
+						catSupLiteral[i][j] = satWrapper.cpVarToBoolVar(catSup[i][j], 1, true);
+						catInfLiteral[i][j] = satWrapper.cpVarToBoolVar(catInf[i][j], 0, false);
+						catEqLiteral[i][j] = satWrapper.cpVarToBoolVar(catEq[i][j], 0, false);
+					}
+					
+					if(text.charAt(cont) == text.charAt(cont + 2)){
+						catSupLiteral[i][j] = satWrapper.cpVarToBoolVar(catSup[i][j], 0, false);
+						catInfLiteral[i][j] = satWrapper.cpVarToBoolVar(catInf[i][j], 0, false);
+						catEqLiteral[i][j] = satWrapper.cpVarToBoolVar(catEq[i][j], 1, true);
+					}
+					
+ 				}else if(j == pl){ //final de calle, todos los casos son falsos
+ 					
  					catSupLiteral[i][j] = satWrapper.cpVarToBoolVar(catSup[i][j], 0, false);
- 					catInfLiteral[i][j] = satWrapper.cpVarToBoolVar(catInf[i][j], 0, false);
- 					catEqLiteral[i][j] = satWrapper.cpVarToBoolVar(catEq[i][j], 0, false);
+					catInfLiteral[i][j] = satWrapper.cpVarToBoolVar(catInf[i][j], 0, false);
+					catEqLiteral[i][j] = satWrapper.cpVarToBoolVar(catEq[i][j], 0, false);
+					
  				}
- 				if(text.charAt(cont) > text.charAt(cont + 2)){
- 					catSupLiteral[i][j] = satWrapper.cpVarToBoolVar(catSup[i][j], 1, false);
- 					catInfLiteral[i][j] = satWrapper.cpVarToBoolVar(catInf[i][j], 0, false);
- 					catEqLiteral[i][j] = satWrapper.cpVarToBoolVar(catEq[i][j], 0, false);
- 				}
- 				if(text.charAt(cont) < text.charAt(cont + 2)){
- 					catSupLiteral[i][j] = satWrapper.cpVarToBoolVar(catSup[i][j], 0, false);
- 					catInfLiteral[i][j] = satWrapper.cpVarToBoolVar(catInf[i][j], 1, false);
- 					catEqLiteral[i][j] = satWrapper.cpVarToBoolVar(catEq[i][j], 0, false);
- 				}
- 				if(text.charAt(cont) == text.charAt(cont + 2)){
- 					catSupLiteral[i][j] = satWrapper.cpVarToBoolVar(catSup[i][j], 0, false);
- 					catInfLiteral[i][j] = satWrapper.cpVarToBoolVar(catInf[i][j], 0, false);
- 					catEqLiteral[i][j] = satWrapper.cpVarToBoolVar(catEq[i][j], 1, false);
- 				}
- 				
- 				
- 				System.out.println("Sup: "+catSupLiteral[i][j]);
- 				System.out.println("Inf: "+catInfLiteral[i][j]);
- 				System.out.println("Equ: "+catEqLiteral[i][j]);
+
  				cont+=2;
  			}
  		}
- 		System.out.println("");
- 		 IntVar x = new IntVar(store, "X", 1,100);
- 		System.out.println("PUTAMIERDA: "+x.dom().value());
- 		 
- 		for(int i = 0; i < st; i++){
- 			for(int j = 0; j < pl-1; j++){
- 				System.out.print("isEmpty: "+isEmpty[i][j].dom().value()+" ");
+ 		
+ 		cont = 1;
+ 		
+ 		for(int i = 0; i<st; i++) {
+ 			for(int j = 0; j<pl; j++) {
+ 				if(j<pl-1) {
+ 					
+					if(text.charAt(cont) > text.charAt(cont + 2))
+						bloqueaTiempoLiteral[i][j] = satWrapper.cpVarToBoolVar(bloqueaTiempo[i][j], 0, false);
+					
+					if(text.charAt(cont) < text.charAt(cont + 2))
+						bloqueaTiempoLiteral[i][j] = satWrapper.cpVarToBoolVar(bloqueaTiempo[i][j], 1, true);
+
+					if(text.charAt(cont) == text.charAt(cont + 2))
+						bloqueaTiempoLiteral[i][j] = satWrapper.cpVarToBoolVar(bloqueaTiempo[i][j], 0, false);
+
+					
+ 				}else if(j == pl){ //final de calle
+ 					
+					bloqueaTiempoLiteral[i][j] = satWrapper.cpVarToBoolVar(bloqueaTiempo[i][j], 0, false);
+					
+ 				}
+
+ 				cont+=2;
  			}
- 			System.out.println("");
  		}
+ 		
  			
 		/* El problema se va a definir en forma CNF, por lo tanto, tenemos
 		   que añadir una a una todas las clausulas del problema. Cada 
