@@ -80,40 +80,40 @@ public class Coches {
  				if(text.charAt(cont) == '_')
  					isEmptyLiteral[i][j] = satWrapper.cpVarToBoolVar(isEmpty[i][j], 1, true);
  				else
- 					isEmptyLiteral[i][j] = satWrapper.cpVarToBoolVar(isEmpty[i][j], 1, true); 
+ 					isEmptyLiteral[i][j] = satWrapper.cpVarToBoolVar(isEmpty[i][j], 0, true); 
  				cont+=2;
  			}
  		}
  		
 		cont = 0;
- 		
+ 		/*asignacion de valores a literales dependiendo del fichero de entrada*/
  		for(int i = 0; i<st; i++) {
  			for(int j = 0; j<pl; j++) {
  				if(j<pl-1) {
  					
 					if(text.charAt(cont) > text.charAt(cont + 2)){
-						catSupLiteral[i][j] = satWrapper.cpVarToBoolVar(catSup[i][j], 0, false);
+						catSupLiteral[i][j] = satWrapper.cpVarToBoolVar(catSup[i][j], 0, true);
 						catInfLiteral[i][j] = satWrapper.cpVarToBoolVar(catInf[i][j], 1, true);
-						catEqLiteral[i][j] = satWrapper.cpVarToBoolVar(catEq[i][j], 0, false);
+						catEqLiteral[i][j] = satWrapper.cpVarToBoolVar(catEq[i][j], 0, true);
 					}
 					
 					if(text.charAt(cont) < text.charAt(cont + 2)){
 						catSupLiteral[i][j] = satWrapper.cpVarToBoolVar(catSup[i][j], 1, true);
-						catInfLiteral[i][j] = satWrapper.cpVarToBoolVar(catInf[i][j], 0, false);
-						catEqLiteral[i][j] = satWrapper.cpVarToBoolVar(catEq[i][j], 0, false);
+						catInfLiteral[i][j] = satWrapper.cpVarToBoolVar(catInf[i][j], 0, true);
+						catEqLiteral[i][j] = satWrapper.cpVarToBoolVar(catEq[i][j], 0, true);
 					}
 					
 					if(text.charAt(cont) == text.charAt(cont + 2)){
-						catSupLiteral[i][j] = satWrapper.cpVarToBoolVar(catSup[i][j], 0, false);
-						catInfLiteral[i][j] = satWrapper.cpVarToBoolVar(catInf[i][j], 0, false);
+						catSupLiteral[i][j] = satWrapper.cpVarToBoolVar(catSup[i][j], 0, true);
+						catInfLiteral[i][j] = satWrapper.cpVarToBoolVar(catInf[i][j], 0, true);
 						catEqLiteral[i][j] = satWrapper.cpVarToBoolVar(catEq[i][j], 1, true);
 					}
 					
  				}else if(j == pl){ //final de calle, todos los casos son falsos
  					
- 					catSupLiteral[i][j] = satWrapper.cpVarToBoolVar(catSup[i][j], 0, false);
-					catInfLiteral[i][j] = satWrapper.cpVarToBoolVar(catInf[i][j], 0, false);
-					catEqLiteral[i][j] = satWrapper.cpVarToBoolVar(catEq[i][j], 0, false);
+ 					catSupLiteral[i][j] = satWrapper.cpVarToBoolVar(catSup[i][j], 0, true);
+					catInfLiteral[i][j] = satWrapper.cpVarToBoolVar(catInf[i][j], 0, true);
+					catEqLiteral[i][j] = satWrapper.cpVarToBoolVar(catEq[i][j], 0, true);
 					
  				}
 
@@ -121,25 +121,25 @@ public class Coches {
  			}
  		}
  		
- 		cont = 1;
+ 		cont = 1;/*Leemos desde el segundo valor de cada posicion*/
  		
  		for(int i = 0; i<st; i++) {
  			for(int j = 0; j<pl; j++) {
  				if(j<pl-1) {
  					
 					if(text.charAt(cont) > text.charAt(cont + 2))
-						bloqueaTiempoLiteral[i][j] = satWrapper.cpVarToBoolVar(bloqueaTiempo[i][j], 0, false);
+						bloqueaTiempoLiteral[i][j] = satWrapper.cpVarToBoolVar(bloqueaTiempo[i][j], 0, true);
 					
 					if(text.charAt(cont) < text.charAt(cont + 2))
 						bloqueaTiempoLiteral[i][j] = satWrapper.cpVarToBoolVar(bloqueaTiempo[i][j], 1, true);
 
 					if(text.charAt(cont) == text.charAt(cont + 2))
-						bloqueaTiempoLiteral[i][j] = satWrapper.cpVarToBoolVar(bloqueaTiempo[i][j], 0, false);
+						bloqueaTiempoLiteral[i][j] = satWrapper.cpVarToBoolVar(bloqueaTiempo[i][j], 0, true);
 
 					
  				}else if(j == pl){ //final de calle
  					
-					bloqueaTiempoLiteral[i][j] = satWrapper.cpVarToBoolVar(bloqueaTiempo[i][j], 0, false);
+					bloqueaTiempoLiteral[i][j] = satWrapper.cpVarToBoolVar(bloqueaTiempo[i][j], 0, true);
 					
  				}
 
@@ -147,7 +147,11 @@ public class Coches {
  			}
  		}
  		
- 			
+ 		//Clausulas
+ 		satWrapper.ad
+ 		addClause(satWrapper, catEqLiteral[0][0], bloqueaTiempoLiteral[0][0]); /* (x v y) */
+ 		
+ 		
 		/* El problema se va a definir en forma CNF, por lo tanto, tenemos
 		   que añadir una a una todas las clausulas del problema. Cada 
 		   clausula será una disjunción de literales. Por ello, sólo
@@ -173,35 +177,7 @@ public class Coches {
 //
 //
 //		/* Resolvemos el problema */
-//	    Search<BooleanVar> search = new DepthFirstSearch<BooleanVar>();
-//		SelectChoicePoint<BooleanVar> select = new SimpleSelect<BooleanVar>(allVariables,
-//							 new SmallestDomain<BooleanVar>(), new IndomainMin<BooleanVar>());
-//		Boolean result = search.labeling(store, select);
-//
-//		if (result) {
-//			System.out.println("Solution: ");
-//
-//			if(x.dom().value() == 1){
-//				System.out.println(x.id());
-//			}
-//
-//			if(y.dom().value() == 1){
-//				System.out.println(y.id());
-//			}
-//
-//			if(z.dom().value() == 1){
-//				System.out.println(z.id());
-//			}
-//
-//			if(w.dom().value() == 1){
-//				System.out.println(w.id());
-//			}
-//
-//		} else{
-//			System.out.println("*** No");
-//		}
-//
-//		System.out.println();
+	System.out.println();
 	}
 
 
