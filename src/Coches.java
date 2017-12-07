@@ -14,7 +14,6 @@ import org.jacop.search.SmallestDomain;
 
 import java.util.ArrayList;
 
-/*prueba commit*/
 
 public class Coches {
 
@@ -48,12 +47,16 @@ public class Coches {
 		BooleanVar catEq[][] = new BooleanVar[st][pl];
 		BooleanVar bloqueaTiempo[][] = new BooleanVar[st][pl];
 		
+		BooleanVar bloqueado[][] = new BooleanVar[st][pl];
+		
 		//Matrices de LITERALES
 		int[][] isEmptyLiteral = new int[st][pl];
 		int[][] catSupLiteral = new int[st][pl];
 		int[][] catInfLiteral = new int[st][pl];
 		int[][] catEqLiteral = new int[st][pl];
 		int[][] bloqueaTiempoLiteral = new int[st][pl];
+		
+		int[][] bloqueadoLiteral = new int[st][pl];
 		
  		
  		ArrayList<BooleanVar> variablesList=new ArrayList<BooleanVar>();			
@@ -70,11 +73,15 @@ public class Coches {
 				catEq[i][j] = new BooleanVar(store, "La categoria de la posicion "+j+1+" de la calle "+i+" es IGUAL a la de la posicion "+j+" " +i); 
 				bloqueaTiempo[i][j] = new BooleanVar(store, "La posicion "+j+1+" de la calle "+i+" sale ANTES que la de la posicion "+j+" " +i); 
 				
+				bloqueado[i][j] = new BooleanVar(store, "La posicion "+j+" de la calle "+i+" *BLOQUEADA*"); 
+				
  				variablesList.add(isEmpty[i][j]);
  				variablesList.add(catSup[i][j]);
  				variablesList.add(catInf[i][j]);
  				variablesList.add(catEq[i][j]);
  				variablesList.add(bloqueaTiempo[i][j]);
+ 				
+ 				variablesList.add(bloqueado[i][j]);
 				
 				/* Registramos las variables en el sat wrapper */
 				satWrapper.register(isEmpty[i][j]);
@@ -82,11 +89,19 @@ public class Coches {
 				satWrapper.register(catInf[i][j]);
 				satWrapper.register(catEq[i][j]);
 				satWrapper.register(bloqueaTiempo[i][j]);
+				
+				satWrapper.register(bloqueado[i][j]);
 
 			}
 		}	
 		
  		allVariables = variablesList.toArray(allVariables);
+ 		
+ 		for(int i = 0; i<st; i++) {
+ 			for(int j = 0; j<pl; j++) {
+ 				bloqueadoLiteral[i][j] = satWrapper.cpVarToBoolVar(bloqueado[i][j], 0, true);
+ 			}
+ 		}
 
 		/* Obtenemos los literales de todas las variables */
 		int cont = 0;
@@ -100,6 +115,7 @@ public class Coches {
  				cont+=2;
  			}
  		}
+ 		
  		
 		cont = 0;
 	
@@ -161,17 +177,19 @@ public class Coches {
  		}
  		
  		//Clausulas
+ 		addClause(satWrapper, isEmptyLiteral[0][0], bloqueadoLiteral[0][0]); //EJEMPLO: Consideramos una plaza bloqueada si esta vacia (no es parte del problema)
+ 		addClause(satWrapper, -isEmptyLiteral[0][0], -bloqueadoLiteral[0][0]);
  		
- 		for(int i = 1; i<st-1; i++) {
- 			for(int j = 1; j<pl-1; j++) {
- 				
- 				addClause(satWrapper, catEqLiteral[i][j], bloqueaTiempoLiteral[i][j-1], catEqLiteral[i][j], catEqLiteral[i][j-1], isEmptyLiteral[i][j+1], isEmptyLiteral[i][j-1]); /* (x v y) */
- 				addClause(satWrapper, catEqLiteral[i][j], bloqueaTiempoLiteral[i][j-1], catEqLiteral[i][j], -bloqueaTiempoLiteral[i][j-1], isEmptyLiteral[i][j+1], isEmptyLiteral[i][j-1]); /* (x v y) */
- 				addClause(satWrapper, catEqLiteral[i][j], bloqueaTiempoLiteral[i][j-1], bloqueaTiempoLiteral[i][j], catEqLiteral[i][j-1], isEmptyLiteral[i][j+1], isEmptyLiteral[i][j-1]); /* (x v y) */
- 				addClause(satWrapper, catEqLiteral[i][j], bloqueaTiempoLiteral[i][j-1], bloqueaTiempoLiteral[i][j], -bloqueaTiempoLiteral[i][j-1], isEmptyLiteral[i][j+1], isEmptyLiteral[i][j-1]); /* (x v y) */			
- 				
- 			}
- 		}
+// 		for(int i = 1; i<st-1; i++) {
+// 			for(int j = 1; j<pl-1; j++) {
+// 				
+// 				addClause(satWrapper, catEqLiteral[i][j], bloqueaTiempoLiteral[i][j-1], catEqLiteral[i][j], catEqLiteral[i][j-1], isEmptyLiteral[i][j+1], isEmptyLiteral[i][j-1]); /* (x v y) */
+// 				addClause(satWrapper, catEqLiteral[i][j], bloqueaTiempoLiteral[i][j-1], catEqLiteral[i][j], -bloqueaTiempoLiteral[i][j-1], isEmptyLiteral[i][j+1], isEmptyLiteral[i][j-1]); /* (x v y) */
+// 				addClause(satWrapper, catEqLiteral[i][j], bloqueaTiempoLiteral[i][j-1], bloqueaTiempoLiteral[i][j], catEqLiteral[i][j-1], isEmptyLiteral[i][j+1], isEmptyLiteral[i][j-1]); /* (x v y) */
+// 				addClause(satWrapper, catEqLiteral[i][j], bloqueaTiempoLiteral[i][j-1], bloqueaTiempoLiteral[i][j], -bloqueaTiempoLiteral[i][j-1], isEmptyLiteral[i][j+1], isEmptyLiteral[i][j-1]); /* (x v y) */			
+// 				
+// 			}
+// 		}
  		
  		
 	/* Resolvemos el problema */
@@ -185,25 +203,11 @@ public class Coches {
 			
 	 		for(int i = 0; i<st; i++) {
 	 			for(int j = 0; j<pl; j++) {
-					if(isEmpty[i][j].dom().value() == 1){
-						System.out.println(isEmpty[i][j].id());
-					}
-		
-					if(catSup[i][j].dom().value() == 1){
-						System.out.println(catSup[i][j].id());
-					}
-		
-					if(catInf[i][j].dom().value() == 1){
-						System.out.println(catInf[i][j].id());
-					}
-		
-					if(catEq[i][j].dom().value() == 1){
-						System.out.println(catEq[i][j].id());
+					
+					if(bloqueado[i][j].dom().value() == 1){
+						System.out.println(bloqueado[i][j].id());
 					}
 					
-					if(bloqueaTiempo[i][j].dom().value() == 1){
-						System.out.println(bloqueaTiempo[i][j].id());
-					}
 	 			}
 	 		}
 
