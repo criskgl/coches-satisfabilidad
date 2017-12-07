@@ -11,6 +11,9 @@ import org.jacop.search.Search;
 import org.jacop.search.SelectChoicePoint;
 import org.jacop.search.SimpleSelect;
 import org.jacop.search.SmallestDomain;
+
+import java.util.ArrayList;
+
 /*prueba commit*/
 
 public class Coches {
@@ -52,6 +55,11 @@ public class Coches {
 		int[][] catEqLiteral = new int[st][pl];
 		int[][] bloqueaTiempoLiteral = new int[st][pl];
 		
+ 		
+ 		ArrayList<BooleanVar> variablesList=new ArrayList<BooleanVar>();			
+ 		BooleanVar[] allVariables = new BooleanVar[variablesList.size()];	
+ 		allVariables = variablesList.toArray(allVariables);
+		
 		for(int i = 0; i<st; i++) {
 			for(int j = 0; j<pl; j++) {
 				
@@ -62,6 +70,12 @@ public class Coches {
 				catEq[i][j] = new BooleanVar(store, "La categoria de la posicion "+j+1+" de la calle "+i+" es IGUAL a la de la posicion "+j+" " +i); 
 				bloqueaTiempo[i][j] = new BooleanVar(store, "La posicion "+j+1+" de la calle "+i+" sale ANTES que la de la posicion "+j+" " +i); 
 				
+ 				variablesList.add(isEmpty[i][j]);
+ 				variablesList.add(catSup[i][j]);
+ 				variablesList.add(catInf[i][j]);
+ 				variablesList.add(catEq[i][j]);
+ 				variablesList.add(bloqueaTiempo[i][j]);
+				
 				/* Registramos las variables en el sat wrapper */
 				satWrapper.register(isEmpty[i][j]);
 				satWrapper.register(catSup[i][j]);
@@ -71,6 +85,8 @@ public class Coches {
 
 			}
 		}	
+		
+ 		allVariables = variablesList.toArray(allVariables);
 
 		/* Obtenemos los literales de todas las variables */
 		int cont = 0;
@@ -86,6 +102,7 @@ public class Coches {
  		}
  		
 		cont = 0;
+	
  		/*asignacion de valores a literales dependiendo del fichero de entrada*/
  		for(int i = 0; i<st; i++) {
  			for(int j = 0; j<pl; j++) {
@@ -135,48 +152,64 @@ public class Coches {
 
 					if(text.charAt(cont) == text.charAt(cont + 2))
 						bloqueaTiempoLiteral[i][j] = satWrapper.cpVarToBoolVar(bloqueaTiempo[i][j], 0, true);
-
-					
- 				}else if(j == pl){ //final de calle
- 					
-					bloqueaTiempoLiteral[i][j] = satWrapper.cpVarToBoolVar(bloqueaTiempo[i][j], 0, true);
-					
+		
+ 				}else if(j == pl){ //final de calle		
+					bloqueaTiempoLiteral[i][j] = satWrapper.cpVarToBoolVar(bloqueaTiempo[i][j], 0, true);				
  				}
-
  				cont+=2;
  			}
  		}
  		
  		//Clausulas
- 		satWrapper.ad
- 		addClause(satWrapper, catEqLiteral[0][0], bloqueaTiempoLiteral[0][0]); /* (x v y) */
+ 		
+ 		for(int i = 1; i<st-1; i++) {
+ 			for(int j = 1; j<pl-1; j++) {
+ 				
+ 				addClause(satWrapper, catEqLiteral[i][j], bloqueaTiempoLiteral[i][j-1], catEqLiteral[i][j], catEqLiteral[i][j-1], isEmptyLiteral[i][j+1], isEmptyLiteral[i][j-1]); /* (x v y) */
+ 				addClause(satWrapper, catEqLiteral[i][j], bloqueaTiempoLiteral[i][j-1], catEqLiteral[i][j], -bloqueaTiempoLiteral[i][j-1], isEmptyLiteral[i][j+1], isEmptyLiteral[i][j-1]); /* (x v y) */
+ 				addClause(satWrapper, catEqLiteral[i][j], bloqueaTiempoLiteral[i][j-1], bloqueaTiempoLiteral[i][j], catEqLiteral[i][j-1], isEmptyLiteral[i][j+1], isEmptyLiteral[i][j-1]); /* (x v y) */
+ 				addClause(satWrapper, catEqLiteral[i][j], bloqueaTiempoLiteral[i][j-1], bloqueaTiempoLiteral[i][j], -bloqueaTiempoLiteral[i][j-1], isEmptyLiteral[i][j+1], isEmptyLiteral[i][j-1]); /* (x v y) */			
+ 				
+ 			}
+ 		}
  		
  		
-		/* El problema se va a definir en forma CNF, por lo tanto, tenemos
-		   que añadir una a una todas las clausulas del problema. Cada 
-		   clausula será una disjunción de literales. Por ello, sólo
-		   utilizamos los literales anteriormente obtenidos. Si fuese
-		   necesario utilizar un literal negado, éste se indica con un
-		   signo negativo delante. Ejemplo: -xLiteral */
+	/* Resolvemos el problema */
+ 		
+ 		Search<BooleanVar> search = new DepthFirstSearch<BooleanVar>();
+		SelectChoicePoint<BooleanVar> select = new SimpleSelect<BooleanVar>(allVariables, new SmallestDomain<BooleanVar>(), new IndomainMin<BooleanVar>());
+		Boolean result = search.labeling(store, select);
 
+		if (result) {
+			System.out.println("Solution: ");
+			
+	 		for(int i = 0; i<st; i++) {
+	 			for(int j = 0; j<pl; j++) {
+					if(isEmpty[i][j].dom().value() == 1){
+						System.out.println(isEmpty[i][j].id());
+					}
+		
+					if(catSup[i][j].dom().value() == 1){
+						System.out.println(catSup[i][j].id());
+					}
+		
+					if(catInf[i][j].dom().value() == 1){
+						System.out.println(catInf[i][j].id());
+					}
+		
+					if(catEq[i][j].dom().value() == 1){
+						System.out.println(catEq[i][j].id());
+					}
+					
+					if(bloqueaTiempo[i][j].dom().value() == 1){
+						System.out.println(bloqueaTiempo[i][j].id());
+					}
+	 			}
+	 		}
 
-//		/* Aristas */
-//		/* Por cada arista una clausula de los literales involucrados */
-//		addClause(satWrapper, xLiteral, yLiteral);		/* (x v y) */
-//		addClause(satWrapper, xLiteral, zLiteral);		/* (x v z) */
-//		addClause(satWrapper, yLiteral, zLiteral);		/* (y v z) */
-//		addClause(satWrapper, yLiteral, wLiteral);		/* (y v w) */
-//		addClause(satWrapper, zLiteral, wLiteral);		/* (z v w) */
-//
-//
-//		/* Max agentes */
-//		addClause(satWrapper, -xLiteral, -yLiteral, -zLiteral);		/* (-x v -y v -z) */
-//		addClause(satWrapper, -xLiteral, -yLiteral, -wLiteral);		/* (-x v -y v -w) */
-//		addClause(satWrapper, -xLiteral, -zLiteral, -wLiteral);		/* (-x v -z v -w) */
-//		addClause(satWrapper, -yLiteral, -zLiteral, -wLiteral);		/* (-y v -z v -w) */
-//
-//
-//		/* Resolvemos el problema */
+		} else{
+			System.out.println("*** No");
+		}
 	System.out.println();
 	}
 
@@ -194,6 +227,17 @@ public class Coches {
 		clause.add(literal1);
 		clause.add(literal2);
 		clause.add(literal3);
+		satWrapper.addModelClause(clause.toArray());
+	}
+	
+	public static void addClause(SatWrapper satWrapper, int literal1, int literal2, int literal3,int literal4, int literal5, int literal6){
+		IntVec clause = new IntVec(satWrapper.pool);
+		clause.add(literal1);
+		clause.add(literal2);
+		clause.add(literal3);
+		clause.add(literal4);
+		clause.add(literal5);
+		clause.add(literal6);
 		satWrapper.addModelClause(clause.toArray());
 	}
 }
