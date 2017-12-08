@@ -47,7 +47,6 @@ public class Coches {
 		BooleanVar catEq[][] = new BooleanVar[st][pl];
 		BooleanVar bloqueaTiempo[][] = new BooleanVar[st][pl];
 		
-		BooleanVar bloqueado[][] = new BooleanVar[st][pl];
 		
 		//Matrices de LITERALES
 		int[][] isEmptyLiteral = new int[st][pl];
@@ -55,9 +54,6 @@ public class Coches {
 		int[][] catInfLiteral = new int[st][pl];
 		int[][] catEqLiteral = new int[st][pl];
 		int[][] bloqueaTiempoLiteral = new int[st][pl];
-		
-		int[][] bloqueadoLiteral = new int[st][pl];
-		
  		
  		ArrayList<BooleanVar> variablesList=new ArrayList<BooleanVar>();			
  		BooleanVar[] allVariables = new BooleanVar[variablesList.size()];	
@@ -72,16 +68,13 @@ public class Coches {
 				catInf[i][j] = new BooleanVar(store, "La categoria de la posicion "+j+1+" de la calle "+i+" es INFERIOR a la de la posicion "+j+" " +i); 
 				catEq[i][j] = new BooleanVar(store, "La categoria de la posicion "+j+1+" de la calle "+i+" es IGUAL a la de la posicion "+j+" " +i); 
 				bloqueaTiempo[i][j] = new BooleanVar(store, "La posicion "+j+1+" de la calle "+i+" sale ANTES que la de la posicion "+j+" " +i); 
-				
-				bloqueado[i][j] = new BooleanVar(store, "La posicion "+j+" de la calle "+i+" *BLOQUEADA*"); 
-				
+								
  				variablesList.add(isEmpty[i][j]);
  				variablesList.add(catSup[i][j]);
  				variablesList.add(catInf[i][j]);
  				variablesList.add(catEq[i][j]);
  				variablesList.add(bloqueaTiempo[i][j]);
  				
- 				variablesList.add(bloqueado[i][j]);
 				
 				/* Registramos las variables en el sat wrapper */
 				satWrapper.register(isEmpty[i][j]);
@@ -89,19 +82,17 @@ public class Coches {
 				satWrapper.register(catInf[i][j]);
 				satWrapper.register(catEq[i][j]);
 				satWrapper.register(bloqueaTiempo[i][j]);
-				
-				satWrapper.register(bloqueado[i][j]);
 
+				isEmptyLiteral[i][j] = satWrapper.cpVarToBoolVar(isEmpty[i][j], 1, true);
+				catSupLiteral[i][j] = satWrapper.cpVarToBoolVar(catSup[i][j], 1, true);
+				catInfLiteral[i][j] = satWrapper.cpVarToBoolVar(catInf[i][j], 1, true);
+				catEqLiteral[i][j] = satWrapper.cpVarToBoolVar(catEq[i][j], 1, true);
+				bloqueaTiempoLiteral[i][j] = satWrapper.cpVarToBoolVar(bloqueaTiempo[i][j], 1, true);
+				
 			}
 		}	
 		
  		allVariables = variablesList.toArray(allVariables);
- 		
- 		for(int i = 0; i<st; i++) {
- 			for(int j = 0; j<pl; j++) {
- 				bloqueadoLiteral[i][j] = satWrapper.cpVarToBoolVar(bloqueado[i][j], 0, true);
- 			}
- 		}
 
 		/* Obtenemos los literales de todas las variables */
 		int cont = 0;
@@ -109,9 +100,9 @@ public class Coches {
  		for(int i = 0; i<st; i++) {
  			for(int j = 0; j<pl; j++) {
  				if(text.charAt(cont) == '_')
- 					isEmptyLiteral[i][j] = satWrapper.cpVarToBoolVar(isEmpty[i][j], 1, true);
- 				else
- 					isEmptyLiteral[i][j] = satWrapper.cpVarToBoolVar(isEmpty[i][j], 0, true); 
+ 					addClause(satWrapper, isEmptyLiteral[i][j]);
+ 				else 
+ 					addClause(satWrapper, -isEmptyLiteral[i][j]);
  				cont+=2;
  			}
  		}
@@ -125,28 +116,28 @@ public class Coches {
  				if(j<pl-1) {
  					
 					if(text.charAt(cont) > text.charAt(cont + 2)){
-						catSupLiteral[i][j] = satWrapper.cpVarToBoolVar(catSup[i][j], 0, true);
-						catInfLiteral[i][j] = satWrapper.cpVarToBoolVar(catInf[i][j], 1, true);
-						catEqLiteral[i][j] = satWrapper.cpVarToBoolVar(catEq[i][j], 0, true);
+						addClause(satWrapper, -catSupLiteral[i][j]);
+						addClause(satWrapper, catInfLiteral[i][j]);
+						addClause(satWrapper, -catEqLiteral[i][j]);
 					}
 					
 					if(text.charAt(cont) < text.charAt(cont + 2)){
-						catSupLiteral[i][j] = satWrapper.cpVarToBoolVar(catSup[i][j], 1, true);
-						catInfLiteral[i][j] = satWrapper.cpVarToBoolVar(catInf[i][j], 0, true);
-						catEqLiteral[i][j] = satWrapper.cpVarToBoolVar(catEq[i][j], 0, true);
+						addClause(satWrapper, catSupLiteral[i][j]);
+						addClause(satWrapper, -catInfLiteral[i][j]);
+						addClause(satWrapper, -catEqLiteral[i][j]);
 					}
 					
 					if(text.charAt(cont) == text.charAt(cont + 2)){
-						catSupLiteral[i][j] = satWrapper.cpVarToBoolVar(catSup[i][j], 0, true);
-						catInfLiteral[i][j] = satWrapper.cpVarToBoolVar(catInf[i][j], 0, true);
-						catEqLiteral[i][j] = satWrapper.cpVarToBoolVar(catEq[i][j], 1, true);
+						addClause(satWrapper, -catSupLiteral[i][j]);
+						addClause(satWrapper, -catInfLiteral[i][j]);
+						addClause(satWrapper, catEqLiteral[i][j]);
 					}
 					
  				}else if(j == pl){ //final de calle, todos los casos son falsos
  					
- 					catSupLiteral[i][j] = satWrapper.cpVarToBoolVar(catSup[i][j], 0, true);
-					catInfLiteral[i][j] = satWrapper.cpVarToBoolVar(catInf[i][j], 0, true);
-					catEqLiteral[i][j] = satWrapper.cpVarToBoolVar(catEq[i][j], 0, true);
+ 					addClause(satWrapper, -catSupLiteral[i][j]);
+ 					addClause(satWrapper, -catInfLiteral[i][j]);
+ 					addClause(satWrapper, -catEqLiteral[i][j]);
 					
  				}
 
@@ -161,24 +152,22 @@ public class Coches {
  				if(j<pl-1) {
  					
 					if(text.charAt(cont) > text.charAt(cont + 2))
-						bloqueaTiempoLiteral[i][j] = satWrapper.cpVarToBoolVar(bloqueaTiempo[i][j], 0, true);
+						addClause(satWrapper, -bloqueaTiempoLiteral[i][j]);
 					
 					if(text.charAt(cont) < text.charAt(cont + 2))
-						bloqueaTiempoLiteral[i][j] = satWrapper.cpVarToBoolVar(bloqueaTiempo[i][j], 1, true);
+						addClause(satWrapper, bloqueaTiempoLiteral[i][j]);
 
 					if(text.charAt(cont) == text.charAt(cont + 2))
-						bloqueaTiempoLiteral[i][j] = satWrapper.cpVarToBoolVar(bloqueaTiempo[i][j], 0, true);
+						addClause(satWrapper, -bloqueaTiempoLiteral[i][j]);
 		
  				}else if(j == pl){ //final de calle		
-					bloqueaTiempoLiteral[i][j] = satWrapper.cpVarToBoolVar(bloqueaTiempo[i][j], 0, true);				
+ 					addClause(satWrapper, -bloqueaTiempoLiteral[i][j]);				
  				}
  				cont+=2;
  			}
  		}
  		
  		//Clausulas
- 		addClause(satWrapper, isEmptyLiteral[0][0], bloqueadoLiteral[0][0]); //EJEMPLO: Consideramos una plaza bloqueada si esta vacia (no es parte del problema)
- 		addClause(satWrapper, -isEmptyLiteral[0][0], -bloqueadoLiteral[0][0]);
  		
 // 		for(int i = 1; i<st-1; i++) {
 // 			for(int j = 1; j<pl-1; j++) {
@@ -191,6 +180,11 @@ public class Coches {
 // 			}
 // 		}
  		
+ 		addClause(satWrapper, -isEmptyLiteral[0][1]);	// the position is empty
+		addClause(satWrapper, isEmptyLiteral[0][1], -catInfLiteral[0][1]); //the front is smaller
+		addClause(satWrapper, isEmptyLiteral[0][1], -catEqLiteral[0][1], -bloqueaTiempoLiteral[0][1]); //the front is equal but time is ok
+		addClause(satWrapper, isEmptyLiteral[0][1], catInfLiteral[0][0]); //the back is smaller
+		addClause(satWrapper, isEmptyLiteral[0][1], -catEqLiteral[0][0], bloqueaTiempoLiteral[0][0]); //the back is equal but time is ok
  		
 	/* Resolvemos el problema */
  		
@@ -199,24 +193,19 @@ public class Coches {
 		Boolean result = search.labeling(store, select);
 
 		if (result) {
-			System.out.println("Solution: ");
-			
-	 		for(int i = 0; i<st; i++) {
-	 			for(int j = 0; j<pl; j++) {
-					
-					if(bloqueado[i][j].dom().value() == 1){
-						System.out.println(bloqueado[i][j].id());
-					}
-					
-	 			}
-	 		}
-
+			System.out.println("Satisfacible");		
 		} else{
-			System.out.println("*** No");
+			System.out.println("No Satisfacible");
 		}
-	System.out.println();
+
 	}
 
+	public static void addClause(SatWrapper satWrapper, int literal1){
+		IntVec clause = new IntVec(satWrapper.pool);
+		clause.add(literal1);
+		satWrapper.addModelClause(clause.toArray());
+	}
+	
 
 	public static void addClause(SatWrapper satWrapper, int literal1, int literal2){
 		IntVec clause = new IntVec(satWrapper.pool);
@@ -230,6 +219,15 @@ public class Coches {
 		IntVec clause = new IntVec(satWrapper.pool);
 		clause.add(literal1);
 		clause.add(literal2);
+		clause.add(literal3);
+		satWrapper.addModelClause(clause.toArray());
+	}
+	
+	public static void addClause(SatWrapper satWrapper, int literal1, int literal2, int literal3, int literal4){
+		IntVec clause = new IntVec(satWrapper.pool);
+		clause.add(literal1);
+		clause.add(literal2);
+		clause.add(literal3);
 		clause.add(literal3);
 		satWrapper.addModelClause(clause.toArray());
 	}
