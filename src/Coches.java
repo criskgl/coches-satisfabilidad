@@ -12,6 +12,11 @@ import org.jacop.search.SelectChoicePoint;
 import org.jacop.search.SimpleSelect;
 import org.jacop.search.SmallestDomain;
 
+import org.jacop.satwrapper.SatTranslation;
+import org.jacop.core.IntVar;
+import org.jacop.core.BooleanVar;
+import org.jacop.core.Store;
+
 import java.util.ArrayList;
 
 
@@ -169,22 +174,22 @@ public class Coches {
  		
  		//Clausulas
  		
-// 		for(int i = 1; i<st-1; i++) {
-// 			for(int j = 1; j<pl-1; j++) {
-// 				
-// 				addClause(satWrapper, catEqLiteral[i][j], bloqueaTiempoLiteral[i][j-1], catEqLiteral[i][j], catEqLiteral[i][j-1], isEmptyLiteral[i][j+1], isEmptyLiteral[i][j-1]); /* (x v y) */
-// 				addClause(satWrapper, catEqLiteral[i][j], bloqueaTiempoLiteral[i][j-1], catEqLiteral[i][j], -bloqueaTiempoLiteral[i][j-1], isEmptyLiteral[i][j+1], isEmptyLiteral[i][j-1]); /* (x v y) */
-// 				addClause(satWrapper, catEqLiteral[i][j], bloqueaTiempoLiteral[i][j-1], bloqueaTiempoLiteral[i][j], catEqLiteral[i][j-1], isEmptyLiteral[i][j+1], isEmptyLiteral[i][j-1]); /* (x v y) */
-// 				addClause(satWrapper, catEqLiteral[i][j], bloqueaTiempoLiteral[i][j-1], bloqueaTiempoLiteral[i][j], -bloqueaTiempoLiteral[i][j-1], isEmptyLiteral[i][j+1], isEmptyLiteral[i][j-1]); /* (x v y) */			
-// 				
-// 			}
-// 		}
+ 		for(int i = 0; i<st; i++) {
+			for(int j = 1; j<pl-1; j++) {
+ 				
+	 		addClause(satWrapper, isEmptyLiteral[i][j-1], isEmptyLiteral[i][j], isEmptyLiteral[i][j+1], catSupLiteral[i][j-1], catInfLiteral[i][j], catEqLiteral[i][j], catEqLiteral[i][j-1]); /* (x v y) */
+	 		addClause(satWrapper, isEmptyLiteral[i][j-1], isEmptyLiteral[i][j], isEmptyLiteral[i][j+1], catSupLiteral[i][j-1], catInfLiteral[i][j], -bloqueaTiempoLiteral[i][j], catEqLiteral[i][j-1]); /* (x v y) */
+	 		addClause(satWrapper, isEmptyLiteral[i][j-1], isEmptyLiteral[i][j], isEmptyLiteral[i][j+1], catSupLiteral[i][j-1], catInfLiteral[i][j], catEqLiteral[i][j], bloqueaTiempoLiteral[i][j-1]); /* (x v y) */
+	 		addClause(satWrapper, isEmptyLiteral[i][j-1], isEmptyLiteral[i][j], isEmptyLiteral[i][j+1], catSupLiteral[i][j-1], catInfLiteral[i][j], -bloqueaTiempoLiteral[i][j], bloqueaTiempoLiteral[i][j-1]); /* (x v y) */			
+				
+ 			}
+ 		}		
  		
- 		addClause(satWrapper, -isEmptyLiteral[0][1]);	// the position is empty
-		addClause(satWrapper, isEmptyLiteral[0][1], -catInfLiteral[0][1]); //the front is smaller
-		addClause(satWrapper, isEmptyLiteral[0][1], -catEqLiteral[0][1], -bloqueaTiempoLiteral[0][1]); //the front is equal but time is ok
-		addClause(satWrapper, isEmptyLiteral[0][1], catInfLiteral[0][0]); //the back is smaller
-		addClause(satWrapper, isEmptyLiteral[0][1], -catEqLiteral[0][0], bloqueaTiempoLiteral[0][0]); //the back is equal but time is ok
+ 		
+// 		addClause(satWrapper, isEmptyLiteral[0][0], isEmptyLiteral[0][1], isEmptyLiteral[0][2], catEqLiteral[0][1], catEqLiteral[0][0]); /* (x v y) */
+// 		addClause(satWrapper, isEmptyLiteral[0][0], isEmptyLiteral[0][1], isEmptyLiteral[0][2], -bloqueaTiempoLiteral[0][1], catEqLiteral[0][0]); /* (x v y) */
+// 		addClause(satWrapper, isEmptyLiteral[0][0], isEmptyLiteral[0][1], isEmptyLiteral[0][2], catEqLiteral[0][1], bloqueaTiempoLiteral[0][0]); /* (x v y) */
+// 		addClause(satWrapper, isEmptyLiteral[0][0], isEmptyLiteral[0][1], isEmptyLiteral[0][2], -bloqueaTiempoLiteral[0][1], bloqueaTiempoLiteral[0][0]); /* (x v y) */	
  		
 	/* Resolvemos el problema */
  		
@@ -199,6 +204,7 @@ public class Coches {
 		}
 
 	}
+
 
 	public static void addClause(SatWrapper satWrapper, int literal1){
 		IntVec clause = new IntVec(satWrapper.pool);
@@ -232,6 +238,16 @@ public class Coches {
 		satWrapper.addModelClause(clause.toArray());
 	}
 	
+	public static void addClause(SatWrapper satWrapper, int literal1, int literal2, int literal3, int literal4, int literal5){
+		IntVec clause = new IntVec(satWrapper.pool);
+		clause.add(literal1);
+		clause.add(literal2);
+		clause.add(literal3);
+		clause.add(literal4);
+		clause.add(literal5);
+		satWrapper.addModelClause(clause.toArray());
+	}
+	
 	public static void addClause(SatWrapper satWrapper, int literal1, int literal2, int literal3,int literal4, int literal5, int literal6){
 		IntVec clause = new IntVec(satWrapper.pool);
 		clause.add(literal1);
@@ -240,6 +256,18 @@ public class Coches {
 		clause.add(literal4);
 		clause.add(literal5);
 		clause.add(literal6);
+		satWrapper.addModelClause(clause.toArray());
+	}
+	
+	public static void addClause(SatWrapper satWrapper, int literal1, int literal2, int literal3,int literal4, int literal5, int literal6, int literal7){
+		IntVec clause = new IntVec(satWrapper.pool);
+		clause.add(literal1);
+		clause.add(literal2);
+		clause.add(literal3);
+		clause.add(literal4);
+		clause.add(literal5);
+		clause.add(literal6);
+		clause.add(literal7);
 		satWrapper.addModelClause(clause.toArray());
 	}
 }
