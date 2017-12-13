@@ -51,6 +51,9 @@ public class Coches {
 		BooleanVar catInf[][] = new BooleanVar[st][pl];
 		BooleanVar catEq[][] = new BooleanVar[st][pl];
 		BooleanVar bloqueaTiempo[][] = new BooleanVar[st][pl];
+		BooleanVar mueveIzq[][] = new BooleanVar[st][pl];
+		BooleanVar mueveDer[][] = new BooleanVar[st][pl];
+
 		
 		
 		//Matrices de LITERALES
@@ -59,6 +62,8 @@ public class Coches {
 		int[][] catInfLiteral = new int[st][pl];
 		int[][] catEqLiteral = new int[st][pl];
 		int[][] bloqueaTiempoLiteral = new int[st][pl];
+		int[][] mueveIzqLiteral = new int[st][pl];
+		int[][] mueveDerLiteral = new int[st][pl];
  		
  		ArrayList<BooleanVar> variablesList=new ArrayList<BooleanVar>();			
  		BooleanVar[] allVariables = new BooleanVar[variablesList.size()];	
@@ -73,12 +78,17 @@ public class Coches {
 				catInf[i][j] = new BooleanVar(store, "La categoria de la posicion "+j+1+" de la calle "+i+" es INFERIOR a la de la posicion "+j+" " +i); 
 				catEq[i][j] = new BooleanVar(store, "La categoria de la posicion "+j+1+" de la calle "+i+" es IGUAL a la de la posicion "+j+" " +i); 
 				bloqueaTiempo[i][j] = new BooleanVar(store, "La posicion "+j+1+" de la calle "+i+" sale ANTES que la de la posicion "+j+" " +i); 
-								
+				mueveIzq[i][j] = new BooleanVar(store, "\t<\t");
+				mueveDer[i][j] = new BooleanVar(store, "\t>\t"); 
+				
+				
  				variablesList.add(isEmpty[i][j]);
  				variablesList.add(catSup[i][j]);
  				variablesList.add(catInf[i][j]);
  				variablesList.add(catEq[i][j]);
  				variablesList.add(bloqueaTiempo[i][j]);
+ 				variablesList.add(mueveIzq[i][j]);
+ 				variablesList.add(mueveDer[i][j]);
  				
 				
 				/* Registramos las variables en el sat wrapper */
@@ -87,12 +97,16 @@ public class Coches {
 				satWrapper.register(catInf[i][j]);
 				satWrapper.register(catEq[i][j]);
 				satWrapper.register(bloqueaTiempo[i][j]);
+				satWrapper.register(mueveIzq[i][j]);
+				satWrapper.register(mueveDer[i][j]);
 
 				isEmptyLiteral[i][j] = satWrapper.cpVarToBoolVar(isEmpty[i][j], 1, true);
 				catSupLiteral[i][j] = satWrapper.cpVarToBoolVar(catSup[i][j], 1, true);
 				catInfLiteral[i][j] = satWrapper.cpVarToBoolVar(catInf[i][j], 1, true);
 				catEqLiteral[i][j] = satWrapper.cpVarToBoolVar(catEq[i][j], 1, true);
 				bloqueaTiempoLiteral[i][j] = satWrapper.cpVarToBoolVar(bloqueaTiempo[i][j], 1, true);
+				mueveIzqLiteral[i][j] = satWrapper.cpVarToBoolVar(mueveIzq[i][j], 1, true);
+				mueveDerLiteral[i][j] = satWrapper.cpVarToBoolVar(mueveDer[i][j], 1, true);
 				
 			}
 		}	
@@ -124,12 +138,14 @@ public class Coches {
 						addClause(satWrapper, -catSupLiteral[i][j]);
 						addClause(satWrapper, catInfLiteral[i][j]);
 						addClause(satWrapper, -catEqLiteral[i][j]);
+						addClause(satWrapper, mueveDerLiteral[i][j]);
 					}
 					
 					if(text.charAt(cont) < text.charAt(cont + 2)){
 						addClause(satWrapper, catSupLiteral[i][j]);
 						addClause(satWrapper, -catInfLiteral[i][j]);
 						addClause(satWrapper, -catEqLiteral[i][j]);
+						addClause(satWrapper, mueveIzqLiteral[i][j]);
 					}
 					
 					if(text.charAt(cont) == text.charAt(cont + 2)){
@@ -138,12 +154,13 @@ public class Coches {
 						addClause(satWrapper, catEqLiteral[i][j]);
 					}
 					
+					
  				}else if(j == pl){ //final de calle, todos los casos son falsos
  					
  					addClause(satWrapper, -catSupLiteral[i][j]);
  					addClause(satWrapper, -catInfLiteral[i][j]);
  					addClause(satWrapper, -catEqLiteral[i][j]);
-					
+ 					addClause(satWrapper, mueveDerLiteral[i][j]);
  				}
 
  				cont+=2;
@@ -156,11 +173,16 @@ public class Coches {
  			for(int j = 0; j<pl; j++) {
  				if(j<pl-1) {
  					
-					if(text.charAt(cont) > text.charAt(cont + 2))
+					if(text.charAt(cont) > text.charAt(cont + 2)){
 						addClause(satWrapper, -bloqueaTiempoLiteral[i][j]);
+						addClause(satWrapper, mueveIzqLiteral[i][j]);
+					}
+						
 					
-					if(text.charAt(cont) < text.charAt(cont + 2))
+					if(text.charAt(cont) < text.charAt(cont + 2)){
 						addClause(satWrapper, bloqueaTiempoLiteral[i][j]);
+						addClause(satWrapper, mueveDerLiteral[i][j]);
+					}
 
 					if(text.charAt(cont) == text.charAt(cont + 2))
 						addClause(satWrapper, -bloqueaTiempoLiteral[i][j]);
@@ -176,12 +198,17 @@ public class Coches {
  		
  		for(int i = 0; i<st; i++) {
 			for(int j = 1; j<pl-1; j++) {
- 				
-	 		addClause(satWrapper, isEmptyLiteral[i][j-1], isEmptyLiteral[i][j], isEmptyLiteral[i][j+1], catSupLiteral[i][j-1], catInfLiteral[i][j], catEqLiteral[i][j], catEqLiteral[i][j-1]); /* (x v y) */
-	 		addClause(satWrapper, isEmptyLiteral[i][j-1], isEmptyLiteral[i][j], isEmptyLiteral[i][j+1], catSupLiteral[i][j-1], catInfLiteral[i][j], -bloqueaTiempoLiteral[i][j], catEqLiteral[i][j-1]); /* (x v y) */
-	 		addClause(satWrapper, isEmptyLiteral[i][j-1], isEmptyLiteral[i][j], isEmptyLiteral[i][j+1], catSupLiteral[i][j-1], catInfLiteral[i][j], catEqLiteral[i][j], bloqueaTiempoLiteral[i][j-1]); /* (x v y) */
-	 		addClause(satWrapper, isEmptyLiteral[i][j-1], isEmptyLiteral[i][j], isEmptyLiteral[i][j+1], catSupLiteral[i][j-1], catInfLiteral[i][j], -bloqueaTiempoLiteral[i][j], bloqueaTiempoLiteral[i][j-1]); /* (x v y) */			
-				
+ 			
+			/*	
+	 		addClause(satWrapper, isEmptyLiteral[i][j-1], isEmptyLiteral[i][j], isEmptyLiteral[i][j+1], catSupLiteral[i][j-1], catInfLiteral[i][j], catEqLiteral[i][j], catEqLiteral[i][j-1]); // (x v y) 
+	 		addClause(satWrapper, isEmptyLiteral[i][j-1], isEmptyLiteral[i][j], isEmptyLiteral[i][j+1], catSupLiteral[i][j-1], catInfLiteral[i][j], -bloqueaTiempoLiteral[i][j], catEqLiteral[i][j-1]); // (x v y) 
+	 		addClause(satWrapper, isEmptyLiteral[i][j-1], isEmptyLiteral[i][j], isEmptyLiteral[i][j+1], catSupLiteral[i][j-1], catInfLiteral[i][j], catEqLiteral[i][j], bloqueaTiempoLiteral[i][j-1]); // (x v y) 
+	 		addClause(satWrapper, isEmptyLiteral[i][j-1], isEmptyLiteral[i][j], isEmptyLiteral[i][j+1], catSupLiteral[i][j-1], catInfLiteral[i][j], -bloqueaTiempoLiteral[i][j], bloqueaTiempoLiteral[i][j-1]); // (x v y) 			
+			*/	
+				addClause(satWrapper, -mueveIzqLiteral[i][j], isEmptyLiteral[i][j-1], isEmptyLiteral[i][j], -mueveDerLiteral[i][j], isEmptyLiteral[i][j+1], -mueveDerLiteral[i][j], catInfLiteral[i][j], -mueveIzqLiteral[i][j], catSupLiteral[i][j-1], -mueveDerLiteral[i][j], catEqLiteral[i][j], -mueveIzqLiteral[i][j], catEqLiteral[i][j-1] );	
+				addClause(satWrapper, -mueveIzqLiteral[i][j], isEmptyLiteral[i][j-1], isEmptyLiteral[i][j], -mueveDerLiteral[i][j], isEmptyLiteral[i][j+1], -mueveDerLiteral[i][j], catInfLiteral[i][j], -mueveIzqLiteral[i][j], catSupLiteral[i][j-1], -mueveDerLiteral[i][j], bloqueaTiempoLiteral[i][j], -mueveIzqLiteral[i][j], catEqLiteral[i][j-1] );	
+				addClause(satWrapper, -mueveIzqLiteral[i][j], isEmptyLiteral[i][j-1], isEmptyLiteral[i][j], -mueveDerLiteral[i][j], isEmptyLiteral[i][j+1], -mueveDerLiteral[i][j], catInfLiteral[i][j], -mueveIzqLiteral[i][j], catSupLiteral[i][j-1], -mueveDerLiteral[i][j], catEqLiteral[i][j], -mueveIzqLiteral[i][j], -bloqueaTiempoLiteral[i][j-1] );	
+				addClause(satWrapper, -mueveIzqLiteral[i][j], isEmptyLiteral[i][j-1], isEmptyLiteral[i][j], -mueveDerLiteral[i][j], isEmptyLiteral[i][j+1], -mueveDerLiteral[i][j], catInfLiteral[i][j], -mueveIzqLiteral[i][j], catSupLiteral[i][j-1], -mueveDerLiteral[i][j], bloqueaTiempoLiteral[i][j], -mueveIzqLiteral[i][j], -bloqueaTiempoLiteral[i][j-1] );
  			}
  		}		
  		
@@ -198,7 +225,19 @@ public class Coches {
 		Boolean result = search.labeling(store, select);
 
 		if (result) {
-			System.out.println("Satisfacible");		
+			System.out.println("Satisfacible");
+			
+			for(int i = 0; i < st; i++){
+				for(int j = 0; j < pl; j++){
+					if(mueveDer[i][j].dom().value() == 1){
+						System.out.print(mueveDer[i][j].id());
+					}
+					else if(mueveIzq[i][j].dom().value() == 1){
+						System.out.print(mueveIzq[i][j].id());
+					}else{System.out.print("\t_\t");}
+				}System.out.println("\n");
+			}
+			
 		} else{
 			System.out.println("No Satisfacible");
 		}
@@ -268,6 +307,23 @@ public class Coches {
 		clause.add(literal5);
 		clause.add(literal6);
 		clause.add(literal7);
+		satWrapper.addModelClause(clause.toArray());
+	}
+	public static void addClause(SatWrapper satWrapper, int literal1, int literal2, int literal3,int literal4, int literal5, int literal6, int literal7, int literal8, int literal9,int literal10 ,int literal11, int literal12, int literal13){
+		IntVec clause = new IntVec(satWrapper.pool);
+		clause.add(literal1);
+		clause.add(literal2);
+		clause.add(literal3);
+		clause.add(literal4);
+		clause.add(literal5);
+		clause.add(literal6);
+		clause.add(literal7);
+		clause.add(literal8);
+		clause.add(literal9);
+		clause.add(literal10);
+		clause.add(literal11);
+		clause.add(literal12);
+		clause.add(literal13);
 		satWrapper.addModelClause(clause.toArray());
 	}
 }
