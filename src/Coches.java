@@ -29,7 +29,7 @@ public class Coches {
 		store.impose(satWrapper);					/* Importante: sat problem */
 		
 		String text = "";
-		Scanner input = new Scanner(new File("src//input.dat"));
+		Scanner input = new Scanner(new File("src//parking.input"));
 		
 		System.out.println();	
 		
@@ -221,6 +221,8 @@ public class Coches {
 		SelectChoicePoint<BooleanVar> select = new SimpleSelect<BooleanVar>(allVariables, new SmallestDomain<BooleanVar>(), new IndomainMin<BooleanVar>());
 		Boolean result = search.labeling(store, select);
 
+		PrintWriter out = new PrintWriter(new FileWriter("src/parking.output"));
+		
 		if (result) {
 			System.out.println("Satisfacible");
 			
@@ -228,25 +230,25 @@ public class Coches {
 				for(int j = 0; j < pl; j++){
 					
 					if(isEmpty[i][j].dom().value() == 1){
-						System.out.print("\t_\t");
+						out.write("\t_\t");
 					}
 					else if(mueveDer[i][j].dom().value() == 1){
-						System.out.print(mueveDer[i][j].id());
+						out.write(mueveDer[i][j].id());
 					}
 					
 					else if(mueveIzq[i][j].dom().value() == 1){
-						System.out.print(mueveIzq[i][j].id());
+						out.write(mueveIzq[i][j].id());
 						
 					}
 
 					
-				}System.out.println("\n");
+				}out.write("\n");
 			}
 			
 		} else{
-			System.out.println("No Satisfacible");
+			out.println("No Satisfacible");
 		}
-
+		out.close();
 	}
 
 
