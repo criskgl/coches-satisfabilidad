@@ -14,7 +14,7 @@ import org.jacop.search.SmallestDomain;
 import java.util.ArrayList;
 
 
-public class Coches {
+public class SATparking {
 
 	public static void main(String[] args) throws IOException {
 		
@@ -23,7 +23,7 @@ public class Coches {
 		store.impose(satWrapper);					/* Importante: sat problem */
 		
 		String text = "";
-		Scanner input = new Scanner(new File("parking.input"));
+		Scanner input = new Scanner(new File(args[0]));
 		
 		System.out.println();	
 		
